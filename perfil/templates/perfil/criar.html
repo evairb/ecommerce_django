@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
-
+{% block titulo %} Criar cadastro | {% endblock titulo %}
 {% block conteudo %}
     <div class="row">
         {% if not request.user.is_authenticated %}

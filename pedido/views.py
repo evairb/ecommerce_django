@@ -1,11 +1,34 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, reverse
 from django.views import View
 from django.contrib import messages
 from produto.models import Variacao
+from .models import Pedido, ItemPedido
+from utils import utils
+from django.http import HttpResponse
+from django.views.generic import DetailView, ListView
 
-class Pagar(View):
-    pass
 
+class DispatchLoginRequiredMixin(View):
+    def dispatch(self, *args, **kwargs):
+        if not self.request.user.is_authenticated:
+            return redirect('perfil:criar')
+
+        return super().dispatch(*args, **kwargs)
+
+    def get_queryset(self, *args, **kwargs):
+        qs = super().get_queryset(*args, **kwargs)
+        qs = qs.filter(usuario=self.request.user)
+        return qs
+
+
+class Pagar(DispatchLoginRequiredMixin, DetailView):
+    template_name = 'pedido/pagar.html'
+    model = Pedido
+    pk_url_kwarg = 'pk'
+    context_object_name = 'pedido'
+    
+    
+    
 class SalvarPedido(View):
     template_name = 'pedido/pagar.html'
 
@@ -42,8 +65,8 @@ class SalvarPedido(View):
                 carrinho[vid]['preco_quantitativo'] = estoque * preco_unt
                 carrinho[vid]['preco_quantitativo_promocional'] = estoque * preco_unt_promo
 
-                error_msg_estoque = 'Estoque insuficiente para alguns produtos do seu carrinho'
-                'Reduzimos a quantidade desses produtos. Por favor, verifique os itens afetados '
+                error_msg_estoque = 'Estoque insuficiente para alguns produtos do seu carrinho,' \
+                'reduzimos a quantidade desses produtos. Por favor, verifique os itens afetados '\
                 'no seu carrinho'
             if error_msg_estoque:
                 messages.error(
@@ -53,12 +76,56 @@ class SalvarPedido(View):
                 )
                 self.request.session.save()
                 return redirect('produto:carrinho')
+        qtd_total_carrinho = utils.cart_total_qtd(carrinho)
+        valor_total_carrinho = utils.cart_totals(carrinho)
 
-        contexto = {
+        pedido = Pedido(
+            usuario = self.request.user,
+            total=valor_total_carrinho,
+            qtd_total = qtd_total_carrinho,
+            status = 'C',
+        )
+        pedido.save()
+        ItemPedido.objects.bulk_create(
+            [
+                ItemPedido(
+                    pedido=pedido,
+                    produto=v['produto_nome'],
+                    produto_id=v['produto_id'],
+                    variacao=v['variacao_nome'],
+                    variacao_id=v['variacao_id'],
+                    preco=v['preco_quantitativo'],
+                    preco_promocional=v['preco_quantitativo_promocional'],
+                    quantidade=v['quantidade'],
+                    imagem=v['imagem'],
+                
+                ) for v in carrinho.values()
+            ]
+        )
         
-        }
-        return render(self.request, self.template_name, contexto)
+        del self.request.session['carrinho']
+        
+        return redirect(
+            reverse(
+                'pedido:pagar',
+                kwargs={
+                    'pk': pedido.pk
+                }
+            )
+        )
     
 
-class DetalhesPedido(View):
-    pass
+class DetalhesPedido(DispatchLoginRequiredMixin, DetailView):
+    model = Pedido
+    context_object_name = 'pedido'
+    template_name = 'pedido/detalhe.html'
+    pk_url_kwarg = 'pk'
+
+
+class Lista(DispatchLoginRequiredMixin, ListView):
+    model = Pedido
+    context_object_name = 'pedidos'
+    template_name = 'pedido/lista.html'
+    paginate_by = 10
+    ordering = ['-id']
+    

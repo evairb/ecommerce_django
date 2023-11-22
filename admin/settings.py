@@ -49,8 +49,6 @@ INSTALLED_APPS = [
     
 
 
-    # TODO: Remover em producao
-    'debug_toolbar',
 ]
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
@@ -64,8 +62,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
-    # TODO: Remover em producao
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
+    
 ]
 
 ROOT_URLCONF = 'admin.urls'
@@ -150,7 +147,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# TODO: Remover em producao
+
 MESSAGE_TAGS = {
     constants.DEBUG : 'alert-info',
     constants.ERROR : 'alert-danger',
@@ -166,6 +163,3 @@ SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
 
 SESSION_SAVE_EVERY_REQUEST = False
 
-INTERNAL_IPS = [
-    '127.0.0.1',
-]
