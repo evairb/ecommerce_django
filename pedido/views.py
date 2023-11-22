@@ -4,7 +4,6 @@ from django.contrib import messages
 from produto.models import Variacao
 from .models import Pedido, ItemPedido
 from utils import utils
-from django.http import HttpResponse
 from django.views.generic import DetailView, ListView
 
 
